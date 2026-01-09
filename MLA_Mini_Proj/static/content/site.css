@@ -1,0 +1,86 @@
+body {
+    padding-top: 50px;
+    padding-bottom: 20px;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+}
+
+/* Set padding to keep content from hitting the edges */
+.body-content {
+    padding-left: 15px;
+    padding-right: 15px;
+}
+
+/* Set width on the form input elements since they're 100% wide by default */
+input,
+select,
+textarea {
+    max-width: 280px;
+}
+
+/* styles for validation helpers */
+.field-validation-error {
+    color: #b94a48;
+}
+
+.field-validation-valid {
+    display: none;
+}
+
+input.input-validation-error {
+    border: 1px solid #b94a48;
+}
+
+input[type="checkbox"].input-validation-error {
+    border: 0 none;
+}
+
+.validation-summary-errors {
+    color: #b94a48;
+}
+
+.validation-summary-valid {
+    display: none;
+}
+
+/* static/content/site.css */
+.card-img-top {
+    height: 320px;
+    object-fit: cover;
+}
+
+.no-poster {
+    height: 320px;
+    background: #f0f0f0;
+    color: #777;
+}
+
+#autocomplete-list {
+    z-index: 1050; /* above bootstrap components */
+    max-height: 240px;
+    overflow-y: auto;
+}
+
+.list-group-item.active {
+    background-color: #2563eb;
+    color: white;
+    border-color: #2563eb;
+}
+
+/* Compact fixed-height footer */
+.app-footer {
+    height: 48px; /* fixed, stable height */
+    line-height: 48px; /* vertical centering fallback */
+    padding: 0; /* remove Bootstrap padding */
+    font-size: 0.85rem; /* slightly smaller text */
+    margin-top: auto;
+}
+
+.app-footer .container {
+    height: 100%;
+}
+
+.app-footer small {
+    line-height: 1;
+}

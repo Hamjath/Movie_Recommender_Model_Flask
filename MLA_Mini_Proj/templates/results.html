@@ -1,0 +1,42 @@
+<!-- templates/results.html -->
+{% extends "layout.html" %}
+{% block title %}Recommendations for {{ movie }}{% endblock %}
+
+{% block content %}
+<div class="mb-3">
+    <a href="{{ url_for('home') }}" class="btn btn-link">&larr; Back</a>
+    <h2 class="d-inline ms-2">Recommendations for <strong>{{ movie }}</strong></h2>
+</div>
+
+{% if recommendations %}
+<div class="row g-3">
+    {% for r in recommendations %}
+    <div class="col-sm-6 col-md-4 col-lg-3">
+        <div class="card h-100 shadow-sm">
+            {% if r.poster %}
+            <img src="{{ r.poster }}" class="card-img-top" alt="{{ r.title }}">
+            {% else %}
+            <div class="no-poster d-flex align-items-center justify-content-center">No poster</div>
+            {% endif %}
+            <div class="card-body d-flex flex-column">
+                <h6 class="card-title">{{ r.title }}</h6>
+                <p class="card-text small text-muted mb-2" style="flex:1;">{{ r.overview[:140] }}{% if r.overview|length > 140 %}...{% endif %}</p>
+                <div class="d-flex gap-2">
+                    {% if r.imdb %}
+                    <a class="btn btn-warning btn-sm"
+                       href="https://www.imdb.com/title/{{ r.imdb }}/"
+                       target="_blank">
+                        IMDb
+                    </a>
+                    {% endif %}
+                    <a class="btn btn-sm btn-primary ms-auto" href="{{ url_for('recommend') }}?movie={{ r.title | urlencode }}">More like this</a>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% else %}
+<div class="alert alert-warning">No recommendations found. Try a different title or spelling.</div>
+{% endif %}
+{% endblock %}
