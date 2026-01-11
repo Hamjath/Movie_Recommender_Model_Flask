@@ -22,8 +22,8 @@ def start_background_loader():
         _loader_started = True
         threading.Thread(target=_background_load, daemon=True).start()
 
-# Start loader in the worker on the first request (safe with Gunicorn)
-@app.before_first_request
+# Start loader in the worker on the first incoming request (works if before_first_request is unavailable)
+@app.before_request
 def _start_loader_on_first_request():
     start_background_loader()
 
