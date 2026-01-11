@@ -3,15 +3,20 @@ from flask import render_template, request, jsonify, current_app, url_for
 from MLA_Mini_Proj import app
 from . import movie_recommender
 
-# Convenience references to the recommender's df and helpers
-df = movie_recommender.df
+    # Keep only the callable reference (recommender handles lazy-load)
 recommend_movies = movie_recommender.recommend_movies
-title_col = movie_recommender.title_col
 
 @app.route("/")
 def home():
+    # ensure dataset is loaded in the recommender
+    movie_recommender._ensure_loaded()
+    df = movie_recommender._df
+    title_col = movie_recommender._title_col
+
     # sample titles for dropdown (kept small and stable order)
-    sample_titles = df[title_col].dropna().sample(30, random_state=42).sort_values().tolist()
+    titles = df[title_col].dropna().astype(str)
+    n = min(30, titles.shape[0])
+    sample_titles = titles.sample(n, random_state=42).sort_values().tolist()
     return render_template("index.html", sample_titles=sample_titles)
 
 
@@ -36,6 +41,10 @@ def api_suggest():
     q = request.args.get("q", "").strip().lower()
     if not q:
         return jsonify([])
+
+    movie_recommender._ensure_loaded()
+    df = movie_recommender._df
+    title_col = movie_recommender._title_col
 
     # Use the title column from the recommender
     titles = df[title_col].dropna().astype(str)

@@ -1,4 +1,4 @@
-<!-- templates/layout.html -->
+
 <!doctype html>
 <html lang="en">
 <head>
@@ -6,13 +6,11 @@
     <meta name="viewport" content="width=device-width,initial-scale=1" />
     <title>{% block title %}Movie Recommender{% endblock %}</title>
 
-    <!-- Bootstrap 5 -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
 
-    <!-- Optional icons -->
+
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css">
 
-    <!-- Your custom styles -->
     <link rel="stylesheet" href="{{ url_for('static', filename='content/site.css') }}">
     {% block extra_head %}{% endblock %}
 </head>
@@ -52,10 +50,8 @@
         </div>
     </footer>
 
-    <!-- Bootstrap JS bundle -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 
-    <!-- Autocomplete script -->
     <script src="{{ url_for('static', filename='scripts/autocomplete.js') }}"></script>
     {% block extra_scripts %}{% endblock %}
 </body>

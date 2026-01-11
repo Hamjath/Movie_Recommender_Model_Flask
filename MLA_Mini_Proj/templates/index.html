@@ -1,22 +1,22 @@
-<!-- templates/index.html -->
+
 {% extends "layout.html" %}
-{% block title %}Home - Movie Recommender{% endblock %}
+{% block title %}home - movie recommender{% endblock %}
 
 {% block content %}
 <div class="card shadow-sm">
     <div class="card-body">
-        <h3 class="card-title mb-3">Find movies similar to one you love</h3>
+        <h3 class="card-title mb-3">find movies similar to one you love</h3>
 
         <form method="post" action="{{ url_for('recommend') }}" class="mb-3" id="search-form">
             <div class="input-group">
-                <input id="movie-input" name="movie" type="text" class="form-control" placeholder="Type a movie title..." autocomplete="off" aria-label="Movie">
-                <button class="btn btn-primary" type="submit">Recommend</button>
+                <input id="movie-input" name="movie" type="text" class="form-control" placeholder="type a movie title..." autocomplete="off" aria-label="movie">
+                <button class="btn btn-primary" type="submit">recommend</button>
             </div>
             <div id="autocomplete-list" class="list-group position-relative mt-1"></div>
         </form>
 
         <div>
-            <small class="text-muted">Or pick a sample:</small>
+            <small class="text-muted">or pick a sample:</small>
             <form method="post" action="{{ url_for('recommend') }}" class="mt-2">
                 <select name="movie" class="form-select w-50 d-inline-block" onchange="this.form.submit()">
                     <option value="">-- choose a sample movie --</option>
