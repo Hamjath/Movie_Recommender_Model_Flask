@@ -6,6 +6,9 @@ import numpy as np
 from sklearn.feature_extraction.text import CountVectorizer
 from sklearn.neighbors import NearestNeighbors
 import tempfile
+import time
+import tracemalloc
+import logging
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
@@ -20,6 +23,11 @@ _title_col = None
 _count = None
 _count_matrix = None
 _nn = None
+
+# profiling info
+_profile = {}
+
+logger = logging.getLogger(__name__)
 
 def _is_url(path):
     return isinstance(path, str) and path.startswith(("http://", "https://"))
@@ -66,14 +74,31 @@ def get_names(obj_list, key='name', top_n=None):
     return " ".join(names)
 
 def _load_and_prepare():
-    global _count, _count_matrix, _nn
+    """Load CSVs, build soup, vectorize and fit nearest-neighbors.
+    This function records timing and memory usage for major steps in the global
+    `_profile` dict to help identify slow spots.
+    """
+    global _count, _count_matrix, _nn, _profile
 
     movies_path = _resolve_path(MOVIES_CSV)
     credits_path = _resolve_path(CREDITS_CSV)
 
+    # start tracing memory allocations
+    tracemalloc.start()
+    t0 = time.perf_counter()
+
+    # read CSVs
+    t_start = time.perf_counter()
     movies = pd.read_csv(movies_path)
     credits = pd.read_csv(credits_path)
+    t_end = time.perf_counter()
+    _profile['read_csv_seconds'] = t_end - t_start
+    current, peak = tracemalloc.get_traced_memory()
+    _profile['after_read_current_bytes'] = current
+    _profile['after_read_peak_bytes'] = peak
+    logger.info("CSV read completed: %.3fs, mem current=%d peak=%d", _profile['read_csv_seconds'], current, peak)
 
+    t_start = time.perf_counter()
     credits = credits.rename(columns={"movie_id": "id"})
     df = movies.merge(credits, on="id")
 
@@ -94,7 +119,13 @@ def _load_and_prepare():
     )
 
     df = df.reset_index(drop=True)
-    
+    t_end = time.perf_counter()
+    _profile['prepare_seconds'] = t_end - t_start
+    current, peak = tracemalloc.get_traced_memory()
+    _profile['after_prepare_current_bytes'] = current
+    _profile['after_prepare_peak_bytes'] = peak
+    logger.info("Data prepare completed: %.3fs, mem current=%d peak=%d", _profile['prepare_seconds'], current, peak)
+
     possible_title_cols = ["title", "original_title", "name"]
     title_col = None
     for col in possible_title_cols:
@@ -104,15 +135,38 @@ def _load_and_prepare():
     if title_col is None:
         raise Exception("No valid title column found in dataset")
 
-    # lightweight vectorizer on sparse representation
+    # vectorize (this can be expensive)
+    t_start = time.perf_counter()
     _count = CountVectorizer(stop_words="english")
     _count_matrix = _count.fit_transform(df["soup"])
+    t_end = time.perf_counter()
+    _profile['vectorize_seconds'] = t_end - t_start
+    current, peak = tracemalloc.get_traced_memory()
+    _profile['after_vectorize_current_bytes'] = current
+    _profile['after_vectorize_peak_bytes'] = peak
+    _profile['count_matrix_shape'] = _count_matrix.shape
+    logger.info("Vectorization completed: %.3fs, matrix shape=%s, mem current=%d peak=%d", _profile['vectorize_seconds'], _profile['count_matrix_shape'], current, peak)
 
-    # fit nearest neighbors on sparse matrix (returns cosine distances)
+    # fit nearest neighbors
+    t_start = time.perf_counter()
     _nn = NearestNeighbors(metric="cosine", algorithm="brute")
     _nn.fit(_count_matrix)
+    t_end = time.perf_counter()
+    _profile['nn_fit_seconds'] = t_end - t_start
+    current, peak = tracemalloc.get_traced_memory()
+    _profile['after_nn_fit_current_bytes'] = current
+    _profile['after_nn_fit_peak_bytes'] = peak
+    logger.info("NearestNeighbors fit completed: %.3fs, mem current=%d peak=%d", _profile['nn_fit_seconds'], current, peak)
 
     indices = pd.Series(df.index, index=df[title_col].str.lower()).drop_duplicates()
+    t_total = time.perf_counter() - t0
+    _profile['total_load_seconds'] = t_total
+    current, peak = tracemalloc.get_traced_memory()
+    _profile['final_current_bytes'] = current
+    _profile['final_peak_bytes'] = peak
+    tracemalloc.stop()
+    logger.info("Total load completed: %.3fs, final mem current=%d peak=%d", t_total, current, peak)
+
     return df, indices, title_col
 
 def _ensure_loaded():
@@ -151,7 +205,7 @@ def recommend_movies(title, n=5):
     neighbors = neighbors.flatten()
 
     results = []
-    # neighbors[0] is usually the same movie (distance ~0) — skip it
+    # neighbors[0] is usually the same movie (distance ~0)  skip it
     seen = 0
     for dist, nbr in zip(distances, neighbors):
         if nbr == idx:
@@ -169,3 +223,7 @@ def recommend_movies(title, n=5):
         if seen >= n:
             break
     return results
+
+def get_profile():
+    """Return last recorded profiling stats (timings in seconds, memory in bytes)."""
+    return dict(_profile)
