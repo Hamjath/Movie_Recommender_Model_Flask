@@ -4,27 +4,27 @@ import requests
 import pandas as pd
 import numpy as np
 from sklearn.feature_extraction.text import CountVectorizer
-from sklearn.metrics.pairwise import cosine_similarity
+from sklearn.neighbors import NearestNeighbors
 import tempfile
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
-# Can be a local path or an HTTP(S) URL. Set these as env vars on Render.
 MOVIES_CSV = os.environ.get("MOVIES_CSV", os.path.join(BASE_DIR, "data", "tmdb_5000_movies.csv"))
 CREDITS_CSV = os.environ.get("CREDITS_CSV", os.path.join(BASE_DIR, "data", "tmdb_5000_credits.csv"))
 OMDB_KEY = os.environ.get("OMDB_KEY", "52e11bb4")
 
-# Caches for lazy loading
+# lazy caches
 _df = None
-_cosine_sim = None
 _indices = None
 _title_col = None
+_count = None
+_count_matrix = None
+_nn = None
 
 def _is_url(path):
     return isinstance(path, str) and path.startswith(("http://", "https://"))
 
 def _download_to_temp(url):
-    """Download URL to a temp file and return the local path. Reuse if exists."""
     tmpdir = tempfile.gettempdir()
     fname = os.path.basename(url.split("?")[0]) or "data.csv"
     local_path = os.path.join(tmpdir, fname)
@@ -39,7 +39,6 @@ def _download_to_temp(url):
     return local_path
 
 def _resolve_path(source):
-    """If source is a URL, download and return local path, else return source as-is."""
     if _is_url(source):
         return _download_to_temp(source)
     return source
@@ -67,6 +66,8 @@ def get_names(obj_list, key='name', top_n=None):
     return " ".join(names)
 
 def _load_and_prepare():
+    global _count, _count_matrix, _nn
+
     movies_path = _resolve_path(MOVIES_CSV)
     credits_path = _resolve_path(CREDITS_CSV)
 
@@ -93,7 +94,7 @@ def _load_and_prepare():
     )
 
     df = df.reset_index(drop=True)
-
+    
     possible_title_cols = ["title", "original_title", "name"]
     title_col = None
     for col in possible_title_cols:
@@ -103,17 +104,21 @@ def _load_and_prepare():
     if title_col is None:
         raise Exception("No valid title column found in dataset")
 
-    count = CountVectorizer(stop_words="english")
-    count_matrix = count.fit_transform(df["soup"])
-    cosine_sim = cosine_similarity(count_matrix, count_matrix)
-    indices = pd.Series(df.index, index=df[title_col].str.lower()).drop_duplicates()
+    # lightweight vectorizer on sparse representation
+    _count = CountVectorizer(stop_words="english")
+    _count_matrix = _count.fit_transform(df["soup"])
 
-    return df, cosine_sim, indices, title_col
+    # fit nearest neighbors on sparse matrix (returns cosine distances)
+    _nn = NearestNeighbors(metric="cosine", algorithm="brute")
+    _nn.fit(_count_matrix)
+
+    indices = pd.Series(df.index, index=df[title_col].str.lower()).drop_duplicates()
+    return df, indices, title_col
 
 def _ensure_loaded():
-    global _df, _cosine_sim, _indices, _title_col
+    global _df, _indices, _title_col
     if _df is None:
-        _df, _cosine_sim, _indices, _title_col = _load_and_prepare()
+        _df, _indices, _title_col = _load_and_prepare()
 
 def fetch_movie_data_omdb(title):
     try:
@@ -130,25 +135,37 @@ def recommend_movies(title, n=5):
     title = title.lower().strip()
 
     if title in _indices:
-        idx = _indices[title]
+        idx = int(_indices[title])
     else:
         matches = _df[_title_col].str.lower().str.contains(title, na=False)
         matches = _df[matches]
         if len(matches) == 0:
             return []
-        idx = matches.index[0]
+        idx = int(matches.index[0])
 
-    sim_scores = list(enumerate(_cosine_sim[idx]))
-    sim_scores = sorted(sim_scores, key=lambda x: x[1], reverse=True)[1:n + 1]
+    # use the fitted nearest-neighbors model to find top neighbors
+    global _count, _count_matrix, _nn
+    query_vec = _count_matrix[idx]
+    distances, neighbors = _nn.kneighbors(query_vec, n_neighbors=min(n + 1, _count_matrix.shape[0]))
+    distances = distances.flatten()
+    neighbors = neighbors.flatten()
 
     results = []
-    for i, _ in sim_scores:
-        movie_title = _df.loc[i, _title_col]
+    # neighbors[0] is usually the same movie (distance ~0) — skip it
+    seen = 0
+    for dist, nbr in zip(distances, neighbors):
+        if nbr == idx:
+            continue
+        movie_title = _df.loc[nbr, _title_col]
         poster_url, imdb_id = fetch_movie_data_omdb(movie_title)
         results.append({
             "title": movie_title,
-            "overview": _df.loc[i, "overview"],
+            "overview": _df.loc[nbr, "overview"],
             "poster": poster_url,
-            "imdb": imdb_id
+            "imdb": imdb_id,
+            "score": float(1.0 - dist)  # similarity estimate
         })
+        seen += 1
+        if seen >= n:
+            break
     return results
