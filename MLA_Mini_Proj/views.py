@@ -8,16 +8,15 @@ recommend_movies = movie_recommender.recommend_movies
 
 @app.route("/")
 def home():
-    # ensure dataset is loaded in the recommender
-    movie_recommender._ensure_loaded()
-    df = movie_recommender._df
-    title_col = movie_recommender._title_col
-
-    # sample titles for dropdown (kept small and stable order)
-    titles = df[title_col].dropna().astype(str)
+    # Do NOT force a full dataset load here. If dataset is not ready, show a lightweight page.
+    if movie_recommender._df is None:
+        # dataset not loaded yet — render a simple page or a loading message
+        return render_template("index.html", sample_titles=[], loading=True)
+    # dataset already loaded — show samples
+    titles = movie_recommender._df[movie_recommender._title_col].dropna().astype(str)
     n = min(30, titles.shape[0])
     sample_titles = titles.sample(n, random_state=42).sort_values().tolist()
-    return render_template("index.html", sample_titles=sample_titles)
+    return render_template("index.html", sample_titles=sample_titles, loading=False)
 
 
 @app.route("/recommend", methods=["GET", "POST"])
