@@ -9,19 +9,21 @@ recommend_movies = movie_recommender.recommend_movies
 
 @app.route("/")
 def home():
-    # Do NOT force a full dataset load here. If dataset is not ready, show a lightweight page.
-    if movie_recommender._df is None:
-        # dataset not loaded yet — render a simple page or a loading message
-        return render_template("index.html", sample_titles=[], loading=True)
-    # dataset already loaded — show samples
-    t0 = time.perf_counter()
-    titles = movie_recommender._df[movie_recommender._title_col].dropna().astype(str)
-    n = min(30, titles.shape[0])
-    sample_titles = titles.sample(n, random_state=42).sort_values().tolist()
-    elapsed = time.perf_counter() - t0
-    # attach elapsed to headers via template context for lightweight debugging
-    return render_template("index.html", sample_titles=sample_titles, loading=False, sample_time=elapsed)
 
+    # ensure dataset is loaded
+    movie_recommender._ensure_loaded()
+
+    titles = movie_recommender._df[movie_recommender._title_col].dropna().astype(str)
+
+    n = min(30, titles.shape[0])
+
+    sample_titles = titles.sample(n, random_state=42).sort_values().tolist()
+
+    return render_template(
+        "index.html",
+        sample_titles=sample_titles,
+        loading=False
+    )
 @app.route("/recommend", methods=["GET", "POST"])
 def recommend():
     # Accept both POST (form) and GET (link from "More like this")
@@ -33,10 +35,19 @@ def recommend():
     if not movie_name:
         return render_template("index.html", error="Please enter a movie name")
 
-    t0 = time.perf_counter()
-    recs = recommend_movies(movie_name, n=8)  # show more on page
-    elapsed = time.perf_counter() - t0
-    return render_template("results.html", movie=movie_name, recommendations=recs, recommend_time=elapsed)
+    try:
+        t0 = time.perf_counter()
+        recs = recommend_movies(movie_name, n=8)  # show more on page
+        elapsed = time.perf_counter() - t0
+        return render_template("results.html", movie=movie_name, recommendations=recs, recommend_time=elapsed)
+    except Exception:
+        app.logger.exception("Recommendation failed for title %r", movie_name)
+        return render_template(
+            "results.html",
+            movie=movie_name,
+            recommendations=[],
+            error="We couldn't process that search right now. Try another movie title.",
+        ), 503
 
 @app.route("/api/suggest")
 def api_suggest():
@@ -52,7 +63,10 @@ def api_suggest():
 
     # Use the title column from the recommender
     titles = df[title_col].dropna().astype(str)
-    mask = titles.str.lower().str.contains(q, na=False)
+    q = movie_recommender.normalize_title(q)
+    if not q:
+        return jsonify([])
+    mask = titles.map(movie_recommender.normalize_title).str.contains(q, regex=False, na=False)
     matches = titles[mask].drop_duplicates().head(10).tolist()
     elapsed = time.perf_counter() - t0
     # include timing in response headers for quick diagnostics
@@ -68,11 +82,15 @@ def api_recommend():
     if not q:
         return jsonify([])
     t0 = time.perf_counter()
-    recs = recommend_movies(q, n=8)
-    elapsed = time.perf_counter() - t0
-    resp = jsonify(recs)
-    resp.headers['X-Recommend-Time'] = f"{elapsed:.4f}s"
-    return resp
+    try:
+        recs = recommend_movies(q, n=8)
+        elapsed = time.perf_counter() - t0
+        resp = jsonify(recs)
+        resp.headers['X-Recommend-Time'] = f"{elapsed:.4f}s"
+        return resp
+    except Exception:
+        app.logger.exception("API recommendation failed for title %r", q)
+        return jsonify({"error": "Unable to process that movie search."}), 503
 
 
 # Debug route to fetch last profiling stats

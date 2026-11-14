@@ -1,31 +1,55 @@
 
 {% extends "layout.html" %}
-{% block title %}home - movie recommender{% endblock %}
+{% block title %}Discover your next favorite movie{% endblock %}
 
 {% block content %}
-<div class="card shadow-sm">
-    <div class="card-body">
-        <h3 class="card-title mb-3">find movies similar to one you love</h3>
+<section class="cinema-hero">
+    <div class="hero-glow"></div>
+    <div class="hero-copy">
+        <div class="eyebrow"><span class="eyebrow-dot"></span> Your personal movie guide</div>
+        <h1>What will you<br><span class="text-gradient">watch next?</span></h1>
+        <p class="hero-subtitle">Discover movies that match your taste. Start with a film you love and let the magic begin.</p>
 
-        <form method="post" action="{{ url_for('recommend') }}" class="mb-3" id="search-form">
-            <div class="input-group">
-                <input id="movie-input" name="movie" type="text" class="form-control" placeholder="type a movie title..." autocomplete="off" aria-label="movie">
-                <button class="btn btn-primary" type="submit">recommend</button>
+        <form method="post" action="{{ url_for('recommend') }}" class="search-form" id="search-form">
+            <div class="search-box">
+                <i class="bi bi-search search-icon"></i>
+                <input id="movie-input" name="movie" type="text" class="form-control" placeholder="Enter a movie title..." autocomplete="off" aria-label="Movie title">
+                <button class="btn btn-primary search-button" type="submit">Recommend <i class="bi bi-arrow-up-right ms-1"></i></button>
             </div>
             <div id="autocomplete-list" class="list-group position-relative mt-1"></div>
         </form>
 
-        <div>
-            <small class="text-muted">or pick a sample:</small>
-            <form method="post" action="{{ url_for('recommend') }}" class="mt-2">
-                <select name="movie" class="form-select w-50 d-inline-block" onchange="this.form.submit()">
-                    <option value="">-- choose a sample movie --</option>
-                    {% for t in sample_titles %}
-                    <option value="{{t}}">{{t}}</option>
-                    {% endfor %}
-                </select>
-            </form>
+        <div class="sample-picker">
+            <span class="sample-label">Try a popular pick</span>
+            <div class="quick-picks">
+                {% for t in sample_titles[:4] %}
+                <form method="post" action="{{ url_for('recommend') }}">
+                    <input type="hidden" name="movie" value="{{ t }}">
+                    <button type="submit" class="quick-pick">{{ t }}</button>
+                </form>
+                {% endfor %}
+            </div>
         </div>
     </div>
-</div>
+
+    <div class="hero-showcase" aria-hidden="true">
+        <div class="poster poster-back"><span>YOUR<br>NEXT<br>STORY</span></div>
+        <div class="poster poster-front">
+            <div class="poster-shade"></div>
+            <i class="bi bi-play-fill poster-play"></i>
+            <div class="poster-caption"><small>TONIGHT'S</small><strong>FEATURE</strong></div>
+        </div>
+        <div class="floating-rating"><i class="bi bi-stars"></i><strong>4.9</strong><small>taste match</small></div>
+    </div>
+</section>
+
+{% if error %}
+<div class="alert alert-warning search-alert" role="alert"><i class="bi bi-exclamation-circle me-2"></i>{{ error }}</div>
+{% endif %}
+
+<section class="feature-row" aria-label="App features">
+    <div class="feature-item"><span class="feature-icon"><i class="bi bi-lightning-charge-fill"></i></span><div><strong>Fast recommendations</strong><small>Find your next watch in seconds</small></div></div>
+    <div class="feature-item"><span class="feature-icon"><i class="bi bi-fingerprint"></i></span><div><strong>Made for your taste</strong><small>Powered by movie similarities</small></div></div>
+    <div class="feature-item"><span class="feature-icon"><i class="bi bi-play-circle-fill"></i></span><div><strong>Endless discovery</strong><small>One favorite leads to another</small></div></div>
+</section>
 {% endblock %}
