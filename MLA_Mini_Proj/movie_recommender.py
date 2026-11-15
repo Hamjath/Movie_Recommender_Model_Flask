@@ -12,7 +12,6 @@ import logging
 from concurrent.futures import ThreadPoolExecutor
 from functools import lru_cache
 
-from sentence_transformers import SentenceTransformer
 from sklearn.metrics.pairwise import cosine_similarity
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -134,10 +133,11 @@ def _load_and_prepare():
     _model  = None
 
     def get_model():
-        global _model
-        if _model is None:
-            _model = SentenceTransformer('all-MiniLM-L6-v2')
-        return _model
+    global _model
+    if _model is None:
+        from sentence_transformers import SentenceTransformer
+        _model = SentenceTransformer("all-MiniLM-L6-v2")
+    return _model
 
     # EMBEDDING CACHE
     if os.path.exists(EMBEDDING_FILE):
