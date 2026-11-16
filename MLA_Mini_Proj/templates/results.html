@@ -6,6 +6,37 @@
     <a href="{{ url_for('home') }}" class="back-link"><i class="bi bi-arrow-left me-2"></i>Search again</a>
 </div>
 
+{% if movie_details %}
+<section class="movie-detail-card">
+    <div class="movie-detail-poster">
+        {% if movie_details.poster %}
+        <img src="{{ movie_details.poster }}" alt="{{ movie_details.title }} poster">
+        {% else %}
+        <div class="no-poster d-flex align-items-center justify-content-center h-100"><i class="bi bi-film"></i></div>
+        {% endif %}
+    </div>
+    <div class="movie-detail-content">
+        <div class="d-flex flex-wrap align-items-center gap-2">
+            <span class="eyebrow"><span class="eyebrow-dot"></span> Selected movie</span>
+            {% if movie_details.year %}<span class="detail-meta">{{ movie_details.year }}</span>{% endif %}
+            {% if movie_details.rating %}<span class="detail-rating"><i class="bi bi-star-fill me-1"></i>{{ movie_details.rating }}/10</span>{% endif %}
+        </div>
+        <h2>{{ movie_details.title }}</h2>
+        {% if movie_details.plot %}<p class="movie-detail-plot">{{ movie_details.plot }}</p>{% endif %}
+        <dl class="movie-detail-facts">
+            {% if movie_details.genre %}<div><dt>Genre</dt><dd>{{ movie_details.genre }}</dd></div>{% endif %}
+            {% if movie_details.director %}<div><dt>Director</dt><dd>{{ movie_details.director }}</dd></div>{% endif %}
+            {% if movie_details.actors %}<div><dt>Cast</dt><dd>{{ movie_details.actors }}</dd></div>{% endif %}
+        </dl>
+        {% if movie_details.imdb %}
+        <a class="btn btn-imdb btn-sm" href="https://www.imdb.com/title/{{ movie_details.imdb }}/" target="_blank" rel="noopener noreferrer">
+            <i class="bi bi-star-fill me-1"></i>View on IMDb
+        </a>
+        {% endif %}
+    </div>
+</section>
+{% endif %}
+
 <div class="results-heading">
     <div>
         <span class="eyebrow"><span class="eyebrow-dot"></span> Your personalized results</span>

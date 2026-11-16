@@ -28,3 +28,16 @@ body::before { position: fixed; z-index: -1; inset: 0; content: ""; pointer-even
 @media (max-width: 900px) { .hero-showcase { right: 1%; opacity: .35; }.hero-copy { z-index: 2; } }
 @media (max-width: 700px) { .page-content { padding-top: 2rem; }.cinema-hero { min-height: 0; padding: 2.2rem 1.3rem; }.hero-showcase { display: none; }.hero-copy h1 { font-size: 3.25rem; }.search-box { display: block; padding: .5rem; }.search-icon { display: none; }.search-button { width: 100%; margin-top: .4rem; }.feature-row { grid-template-columns: 1fr; }.results-heading { align-items: start; flex-direction: column; }.card-img-top, .no-poster { height: 260px; } }
 @media (max-width: 420px) { .app-footer { height: auto; padding: 1rem 0; }.app-footer .d-flex { gap: .6rem; flex-direction: column; align-items: flex-start !important; }.hero-copy h1 { font-size: 2.7rem; } }
+.movie-detail-card { display: grid; grid-template-columns: minmax(210px, 280px) 1fr; gap: clamp(1.4rem, 4vw, 3rem); margin-bottom: 3rem; padding: clamp(1rem, 3vw, 1.7rem); border: 1px solid var(--line); border-radius: 22px; background: linear-gradient(135deg, rgba(29,33,55,.95), rgba(21,24,42,.78)); box-shadow: 0 20px 50px rgba(0,0,0,.24); }
+.movie-detail-poster { min-height: 360px; overflow: hidden; border-radius: 15px; background: var(--surface-2); }
+.movie-detail-poster img { width: 100%; height: 100%; min-height: 360px; object-fit: cover; }
+.movie-detail-content { align-self: center; }
+.movie-detail-content h2 { margin: .8rem 0 1rem; color: var(--text); font-size: clamp(2rem, 4vw, 3.4rem); letter-spacing: -.06em; }
+.detail-meta, .detail-rating { padding: .35rem .55rem; color: var(--muted); border: 1px solid var(--line); border-radius: 99px; font-size: .72rem; }
+.detail-rating { color: #facc15; }
+.movie-detail-plot { max-width: 720px; color: var(--muted); line-height: 1.75; }
+.movie-detail-facts { display: grid; gap: .75rem; margin: 1.4rem 0; }
+.movie-detail-facts div { display: grid; grid-template-columns: 90px 1fr; gap: .8rem; }
+.movie-detail-facts dt { color: var(--purple-light); font-size: .73rem; font-weight: 800; text-transform: uppercase; }
+.movie-detail-facts dd { margin: 0; color: var(--text); font-size: .85rem; }
+@media (max-width: 700px) { .movie-detail-card { grid-template-columns: 1fr; }.movie-detail-poster { max-width: 280px; min-height: 390px; margin: 0 auto; }.movie-detail-poster img { min-height: 390px; } }

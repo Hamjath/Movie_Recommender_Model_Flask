@@ -33,14 +33,22 @@ def recommend():
 
     try:
         t0 = time.perf_counter()
+        movie_details = movie_recommender.fetch_movie_details_omdb(movie_name)
         recs = recommend_movies(movie_name, n=8)  # show more on page
         elapsed = time.perf_counter() - t0
-        return render_template("results.html", movie=movie_name, recommendations=recs, recommend_time=elapsed)
+        return render_template(
+            "results.html",
+            movie=movie_name,
+            movie_details=movie_details,
+            recommendations=recs,
+            recommend_time=elapsed,
+        )
     except Exception:
         app.logger.exception("Recommendation failed for title %r", movie_name)
         return render_template(
             "results.html",
             movie=movie_name,
+            movie_details=None,
             recommendations=[],
             error="We couldn't process that search right now. Try another movie title.",
         ), 503

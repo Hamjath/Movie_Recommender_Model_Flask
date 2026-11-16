@@ -230,6 +230,33 @@ def fetch_movie_data_omdb(title):
 fetch_movie_data_omdb = lru_cache(maxsize=512)(fetch_movie_data_omdb)
 
 
+@lru_cache(maxsize=512)
+def fetch_movie_details_omdb(title):
+    try:
+        response = requests.get(
+            "http://www.omdbapi.com/",
+            params={"t": title, "apikey": OMDB_KEY, "plot": "full"},
+            timeout=5,
+        ).json()
+
+        if response.get("Response") == "False":
+            return None
+
+        return {
+            "title": response.get("Title") or title,
+            "year": response.get("Year"),
+            "plot": response.get("Plot") if response.get("Plot") != "N/A" else "",
+            "poster": response.get("Poster") if response.get("Poster") != "N/A" else None,
+            "director": response.get("Director") if response.get("Director") != "N/A" else "",
+            "actors": response.get("Actors") if response.get("Actors") != "N/A" else "",
+            "genre": response.get("Genre") if response.get("Genre") != "N/A" else "",
+            "imdb": response.get("imdbID"),
+            "rating": response.get("imdbRating") if response.get("imdbRating") != "N/A" else "",
+        }
+    except Exception:
+        return None
+
+
 def recommend_movies(title, n=5):
 
     _ensure_loaded()
