@@ -9,20 +9,16 @@ recommend_movies = movie_recommender.recommend_movies
 
 @app.route("/")
 def home():
-
-    # ensure dataset is loaded
-    movie_recommender._ensure_loaded()
-
-    titles = movie_recommender._df[movie_recommender._title_col].dropna().astype(str)
-
-    n = min(30, titles.shape[0])
-
-    sample_titles = titles.sample(n, random_state=42).sort_values().tolist()
+    sample_titles = [
+        "(500) Days of Summer",
+        "AVP: Alien vs. Predator",
+        "Away We Go",
+        "Bandits",
+    ]
 
     return render_template(
         "index.html",
         sample_titles=sample_titles,
-        loading=False
     )
 @app.route("/recommend", methods=["GET", "POST"])
 def recommend():
