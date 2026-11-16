@@ -86,6 +86,27 @@ def _load_and_prepare():
 
     logger.info("Loading datasets...")
 
+    movies = pd.read_csv(
+        MOVIES_CSV,
+        usecols=lambda column: column in {"title", "overview"},
+    )
+
+    # The committed embedding cache matches the movie CSV order. In
+    # production, load only the fields needed by the results page instead of
+    # parsing the much larger credits file.
+    if os.path.exists(EMBEDDING_FILE) and "title" in movies.columns:
+        cached_embeddings = np.load(EMBEDDING_FILE, mmap_mode="r")
+        if len(cached_embeddings) == len(movies):
+            _embeddings = cached_embeddings
+            df = movies.reset_index(drop=True)
+            df["overview"] = df["overview"].fillna("")
+            indices = pd.Series(
+                df.index,
+                index=df["title"].map(normalize_title),
+            )
+            logger.info("Loaded lightweight movie cache")
+            return df, indices, "title"
+
     movies = pd.read_csv(MOVIES_CSV)
     credits = pd.read_csv(CREDITS_CSV)
 
